@@ -13,10 +13,6 @@ class Message:
         self.time = time
         self.message = message
 
-    def get_chat_str(self):
-        t = time.strftime('%y-%m-%d %H:%M:%S',time.localtime(self.time))
-        return f"{t} - {self.user} {self.nick}:\n{self.message}"
-
     def __str__(self) -> str:
         return f"('{self.user}', '{self.nick}', {self.time}, '{self.message}')"
 
@@ -36,6 +32,9 @@ class DBwrapper:
         table_query = f"CREATE TABLE IF NOT EXISTS {self.tablename} {Message.columns_coma_parenthesis}"
         # print(table_query)
         self.cursor.execute(table_query)
+        
+        table_query = f"CREATE TABLE IF NOT EXISTS online (user NOT NULL PRIMARY KEY, time)"
+        self.cursor.execute(table_query)
 
     def close(self):
         self.cursor.close()
@@ -54,11 +53,26 @@ class DBwrapper:
         messages = [Message(*i) for i in result.fetchall()]
         # print(f"{len(messages)} new messages")
         return messages
+    
+    def set_user_online(self, user):
+        s = f"INSERT OR REPLACE INTO online VALUES ('{user}', '{time.time()}')"
+        self.cursor.execute(s)
+        self.connection.commit()
+
+    def get_users(self):
+        now = time.time()
+        three_minutes_back= now - 180.0
+        result = self.cursor.execute(f"SELECT * FROM online")
+        users = []
+        for i in result.fetchall():
+            if float(i[1]) > three_minutes_back:
+                users.append(i[0])
+        return users
 
 
 class ChatHandler:
 
-    def __init__(self, user, file_name, directory:str, nick:str):
+    def __init__(self, user, nick, file_name, directory:str):
         self.user = user
         self.nick = nick
         self.directory = directory
@@ -74,6 +88,12 @@ class ChatHandler:
         m = self.db.get_new_messages(self.latest_fetch_time)
         self.latest_fetch_time = time.time()
         return m
+    
+    def set_user_online(self):
+        self.db.set_user_online(self.user)   
+        
+    def get_online_users(self):
+        return self.db.get_users()
 
     def close(self):
         self.db.close()
