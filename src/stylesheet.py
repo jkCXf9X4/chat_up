@@ -14,7 +14,7 @@ QTextEdit
     border: none;
     background-color: white;
     border-radius:15px;
-    font: bold 20px;
+    font: bold 25px;
     min-height: 100px;
     max-height: 100px;
     margin: 20px;
@@ -72,7 +72,6 @@ QLabel
     width: 200;
 }
 """
-    # color: #cad7db;
 
 list_view_style = """
     background-color: #cad7db;

@@ -1,8 +1,8 @@
 
 from email import message
-from PySide6.QtCore import *
-from PySide6.QtWidgets import *
-from PySide6.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
 
 from chat_handler import ChatHandler, Message
 from stylesheet import *
@@ -12,8 +12,8 @@ import time
 
 diff_position = 50
 
-BUBBLE_PADDING = QMargins(15, 20, diff_position+15, 5)
-TEXT_PADDING = QMargins(25, 35, diff_position+25, 15)
+BUBBLE_PADDING = QMargins(15, 20, diff_position+25, 5)
+TEXT_PADDING = QMargins(25, 40, diff_position+35, 15)
 
 
 class MessageDelegate(QStyledItemDelegate):
@@ -33,7 +33,7 @@ class MessageDelegate(QStyledItemDelegate):
 
     def get_trans(self, user):
         if user == self.current_user:
-            return QPoint(0, 0)
+            return QPoint(10, 0)
         else:
             return QPoint(diff_position, 0)
 
@@ -77,12 +77,9 @@ class MessageDelegate(QStyledItemDelegate):
         time_str = time.strftime(
             '%y-%m-%d %H:%M:%S', time.localtime(message.time))
         painter.drawText(bubble_rect.topRight() -
-                         QPoint(150, 0) + QPoint(0, 14), time_str)
+                         QPoint(200, 0) + QPoint(0, 20), time_str)
 
-        if message.user == self.current_user:
-            user_string = f"You / {message.nick} wrote:"
-        else:
-            user_string = f"{message.user} / {message.nick} wrote:"
+        user_string = f"{message.user} << {message.nick} >> wrote:"
 
         painter.drawText(bubble_rect.topLeft() - QPoint(0, 5), user_string)
 
@@ -136,7 +133,8 @@ class ChatWidget(QWidget):
         self.messages.setResizeMode(QListView.Adjust)
         self.messages.setItemDelegate(MessageDelegate(self.chat_handler.user))
         self.messages.setStyleSheet(list_view_style)
-        self.messages.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.messages.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.model = MessageModel()
         self.messages.setModel(self.model)
@@ -146,59 +144,55 @@ class ChatWidget(QWidget):
         self.new_message.setStyleSheet(qtext_edit_style)
 
         main_layout = QHBoxLayout()
-        main_layout.setContentsMargins(0,0,0,0)
-       
-        
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
         chat_layout = QVBoxLayout()
-        chat_layout.setContentsMargins(0,0,0,0)
+        chat_layout.setContentsMargins(0, 0, 0, 0)
         chat_layout.addWidget(self.messages)
         chat_layout.addWidget(self.new_message)
-        
+
         user_layout = QVBoxLayout()
         user_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         user_frame = QFrame()
         user_frame.setLayout(user_layout)
-        
+
         user_online_label = QLabel("Online users")
         user_online_label.setStyleSheet(users_style)
         self.users = QLabel("Placeholder")
         user_layout.addWidget(user_online_label)
         user_layout.addWidget(self.users)
-        
+
         main_layout.addLayout(chat_layout)
         main_layout.addWidget(user_frame)
 
-        self.setContentsMargins(0,0,0,0)
+        self.setContentsMargins(0, 0, 0, 0)
         self.setLayout(main_layout)
         self.new_message.setFocus()
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.display_new_messages)
         self.timer.start(5000)
-        
+
         self.timer2 = QTimer()
         self.timer2.timeout.connect(self.get_users)
-        self.timer2.start(100000)
+        self.timer2.start(25000)
 
         self.display_new_messages()
         self.get_users()
 
-    @Slot()
     def display_new_messages(self):
         for m in self.chat_handler.get_new_messages():
             self.model.add_message(m)
             self.messages.scrollToBottom()
-            
+
     def get_users(self):
         self.chat_handler.set_user_online()
         users = self.chat_handler.get_online_users()
         s = ""
         for i in users:
             s += f"{i}\n"
-        # print(s)
         self.users.setText(s)
 
-    @Slot()
     def send_message(self):
         m = self.new_message.toPlainText()
         if m != "":
@@ -209,6 +203,7 @@ class ChatWidget(QWidget):
     def closeEvent(self, event):
         self.chat_handler.close()
 
+    # dont send when pressing shift + enter
     def eventFilter(self, obj, event):
         if obj is self.new_message and event.type() == QEvent.KeyPress:
             modifiers = event.modifiers()

@@ -2,6 +2,7 @@ import sqlite3
 import time
 import os
 
+
 class Message:
     columns = ["user", "nick", "time", "message"]
     columns_coma = f"{', '.join(columns)}"
@@ -18,7 +19,7 @@ class Message:
 
 
 class DBwrapper:
-    def __init__(self, name, dir:str) -> None:
+    def __init__(self, name, dir: str) -> None:
         self.dbname = name + ".db"
         self.path = os.path.join(dir, self.dbname)
         print(self.path)
@@ -32,7 +33,7 @@ class DBwrapper:
         table_query = f"CREATE TABLE IF NOT EXISTS {self.tablename} {Message.columns_coma_parenthesis}"
         # print(table_query)
         self.cursor.execute(table_query)
-        
+
         table_query = f"CREATE TABLE IF NOT EXISTS online (user NOT NULL PRIMARY KEY, time)"
         self.cursor.execute(table_query)
 
@@ -41,7 +42,7 @@ class DBwrapper:
         self.connection.close()
 
     def add_message(self, user, nick, message):
-        m = Message(user=user,nick=nick, time=time.time(), message=message)
+        m = Message(user=user, nick=nick, time=time.time(), message=message)
         s = f"INSERT INTO {self.tablename} VALUES {m}"
         # print(s)
         self.cursor.execute(s)
@@ -53,7 +54,7 @@ class DBwrapper:
         messages = [Message(*i) for i in result.fetchall()]
         # print(f"{len(messages)} new messages")
         return messages
-    
+
     def set_user_online(self, user):
         s = f"INSERT OR REPLACE INTO online VALUES ('{user}', '{time.time()}')"
         self.cursor.execute(s)
@@ -61,18 +62,18 @@ class DBwrapper:
 
     def get_users(self):
         now = time.time()
-        three_minutes_back= now - 180.0
+        one_minutes_back = now - 60.0
         result = self.cursor.execute(f"SELECT * FROM online")
         users = []
         for i in result.fetchall():
-            if float(i[1]) > three_minutes_back:
+            if float(i[1]) > one_minutes_back:
                 users.append(i[0])
         return users
 
 
 class ChatHandler:
 
-    def __init__(self, user, nick, file_name, directory:str):
+    def __init__(self, user, nick, file_name, directory: str):
         self.user = user
         self.nick = nick
         self.directory = directory
@@ -88,10 +89,10 @@ class ChatHandler:
         m = self.db.get_new_messages(self.latest_fetch_time)
         self.latest_fetch_time = time.time()
         return m
-    
+
     def set_user_online(self):
-        self.db.set_user_online(self.user)   
-        
+        self.db.set_user_online(self.user)
+
     def get_online_users(self):
         return self.db.get_users()
 
